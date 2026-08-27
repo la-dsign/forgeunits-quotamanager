@@ -16,7 +16,7 @@ El servicio sirve el dashboard compilado y la API desde el mismo dominio. El das
 
 Configura una clave individual con `GEMINI_API_KEY` y `GEMINI_API_KEY_ID`, o varias con `GEMINI_API_KEYS_JSON`. El servidor nunca devuelve los secretos: solo expone identificadores, proyecto, estado y métricas agregadas. El almacenamiento JSON es adecuado para desarrollo; en producción se recomienda montar un volumen persistente de Railway o migrar a PostgreSQL antes de guardar históricos importantes.
 
-En Railway configura también `AI_USAGE_API_TOKEN` para ForgeUnits y `AI_USAGE_DASHBOARD_PASSWORD` para el acceso humano al dashboard. El servicio falla cerrado: sin esas variables no permite consultar ni escribir métricas.
+En Railway configura también `AI_USAGE_API_TOKEN` para ForgeUnits y `AI_USAGE_DASHBOARD_PASSWORD` para el acceso humano al dashboard. El servicio falla cerrado: sin esas variables no permite consultar ni escribir métricas. El proyecto tiene un Railway Volume montado en `/app/server/data` para conservar el histórico de `usage.json` entre despliegues.
 
 ## Integración con ForgeUnits
 
