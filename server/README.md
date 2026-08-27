@@ -6,21 +6,21 @@ Servicio independiente para registrar consumo y preparar la integración posteri
 
 AI_USAGE_INGEST_TOKEN=local-dev-token node server/server.mjs
 
-Variables: AI_USAGE_PORT, AI_USAGE_STORE, AI_USAGE_API_TOKEN, AI_USAGE_INGEST_TOKEN, AI_USAGE_CORS_ORIGIN, GEMINI_API_KEY, GEMINI_API_KEY_ID, GEMINI_API_KEYS_JSON, GEMINI_PROJECT_ID y AI_USAGE_RPM_LIMIT.
+Variables: AI_USAGE_PORT, AI_USAGE_STORE, AI_USAGE_API_TOKEN, AI_USAGE_DASHBOARD_PASSWORD, AI_USAGE_INGEST_TOKEN, AI_USAGE_CORS_ORIGIN, GEMINI_API_KEY, GEMINI_API_KEY_ID, GEMINI_API_KEYS_JSON, GEMINI_PROJECT_ID y AI_USAGE_RPM_LIMIT.
 
 No se almacenan API keys de Google. apiKeyId es un identificador lógico; los secretos deberán vivir en un gestor de secretos.
 
 ## Evento
 
-El servicio acepta Authorization: Bearer TOKEN. AI_USAGE_API_TOKEN es el nombre recomendado; AI_USAGE_INGEST_TOKEN se conserva por compatibilidad.
+El servicio acepta Authorization: Bearer TOKEN para integraciones de servicio. AI_USAGE_API_TOKEN es el nombre recomendado; AI_USAGE_INGEST_TOKEN se conserva por compatibilidad. Las consultas del dashboard requieren sesión iniciada con AI_USAGE_DASHBOARD_PASSWORD; si no se configura, el acceso queda bloqueado de forma segura.
 
-POST /api/ai-usage/events recibe provider, tenantId, userId, agentId, workflowId, projectId, apiKeyId, model, mode, inputTokens, outputTokens, cachedInputTokens, groundingRequests, costUsd, status y timestamp.
+POST /api/ai-usage/events recibe provider, tenantId, userId, agentId, workflowId, projectId, apiKeyId, model, mode, inputTokens, outputTokens, cachedInputTokens, groundingRequests, status y timestamp. El costo siempre se calcula en el backend; el valor enviado por un cliente se ignora.
 
 POST /api/ai-usage/generate recibe model, contents, generationConfig y opcionalmente apiKeyId, tenantId, userId, agentId, workflowId, systemInstruction, mode y groundingRequests. La clave real se lee exclusivamente desde GEMINI_API_KEY o GEMINI_API_KEYS_JSON, nunca desde el navegador. La respuesta incluye el resultado de Gemini y el evento de uso registrado.
 
 Para varias claves, GEMINI_API_KEYS_JSON puede ser un objeto como {"production-main":"AIza...","production-backup":"AIza..."}. En producción debe inyectarse desde un gestor de secretos y no guardarse en el repositorio.
 
-Consultas: GET /api/ai-usage/summary, GET /api/ai-usage/by-key, GET /api/ai-usage/by-model, GET /api/ai-usage/by-project, GET /api/ai-usage/by-agent, GET /api/ai-usage/by-workflow y GET /api/ai-usage/by-user.
+Consultas: GET /api/ai-usage/summary, GET /api/ai-usage/by-key, GET /api/ai-usage/by-model, GET /api/ai-usage/by-project, GET /api/ai-usage/by-agent, GET /api/ai-usage/by-workflow y GET /api/ai-usage/by-user. Todas requieren el token de servicio o una sesión iniciada del dashboard.
 
 ## Cliente para ForgeUnits
 

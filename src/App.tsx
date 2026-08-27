@@ -16,6 +16,9 @@ const fmt = (value: number) => new Intl.NumberFormat('es-ES').format(value)
 
 function App() {
     const { theme, toggleTheme } = useTheme()
+    const [dashboardAuth, setDashboardAuth] = useState<'checking' | 'authenticated' | 'required'>('checking')
+    const [dashboardPassword, setDashboardPassword] = useState('')
+    const [loginError, setLoginError] = useState('')
     const [keys, setKeys] = useState(initialKeys)
     const [selectedId, setSelectedId] = useState(1)
     const [activeNav, setActiveNav] = useState('Resumen')
@@ -26,7 +29,11 @@ function App() {
     const [liveKeys, setLiveKeys] = useState<Record<string, { requests: number; inputTokens: number; outputTokens: number; costUsd?: number; lastUsed?: string | null }>>({})
     const visibleKeys = useMemo(() => keys.filter(key => (key.name + ' ' + key.project).toLowerCase().includes(search.toLowerCase())), [keys, search])
     useEffect(() => {
+        fetch('/api/auth/status').then(response => response.json()).then(result => setDashboardAuth(result.authenticated ? 'authenticated' : 'required')).catch(() => setDashboardAuth('required'))
+    }, [])
+    useEffect(() => {
         let active = true
+        if (dashboardAuth !== 'authenticated') return () => { active = false }
         const refresh = async () => {
             try {
                 const [summaryResponse, keysResponse] = await Promise.all([fetch('/api/ai-usage/summary'), fetch('/api/ai-usage/by-key')])
@@ -41,7 +48,7 @@ function App() {
         refresh()
         const interval = window.setInterval(refresh, 15000)
         return () => { active = false; window.clearInterval(interval) }
-    }, [])
+    }, [dashboardAuth])
     const totalRequests = liveSummary?.requests ?? keys.reduce((total, key) => total + key.requests, 0)
     const totalTokens = liveSummary ? liveSummary.inputTokens + liveSummary.outputTokens : keys.reduce((total, key) => total + key.tokens, 0)
     const totalCost = liveSummary?.costUsd ?? calculateTotalCost(keys.map<UsageSample>(key => ({ model: 'gemini-2.5-flash', inputTokens: key.inputTokens, outputTokens: key.outputTokens })))
@@ -53,6 +60,13 @@ function App() {
         setKeys(current => [...current, { id: Date.now(), name: String(data.get('name') || 'Nueva clave'), project: String(data.get('project') || 'gen-lang-client-0015125690'), masked: 'AIza••••••••••••N7v3', status: 'Activo', requests: 0, tokens: 0, inputTokens: 0, outputTokens: 0, limit: Number(data.get('limit') || 2000), lastUsed: 'nunca', color: 'pink' }])
         setShowModal(false); notify('API key agregada correctamente')
     }
+    const login = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault(); setLoginError('')
+        const response = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: dashboardPassword }) })
+        if (!response.ok) { setLoginError(response.status === 503 ? 'Falta configurar AI_USAGE_DASHBOARD_PASSWORD en Railway.' : 'Contraseña incorrecta.'); return }
+        setDashboardPassword(''); setDashboardAuth('authenticated')
+    }
+    if (dashboardAuth !== 'authenticated') return <div className="auth-shell"><form className="auth-card" onSubmit={login}><div className="brand-mark">◈</div><p className="eyebrow">FORGEUNITS QUOTAMANAGER</p><h1>Acceso privado</h1><p className="muted">Las métricas de consumo están protegidas. Introduce la contraseña del dashboard.</p>{dashboardAuth === 'checking' ? <p className="muted">Comprobando acceso…</p> : <><label>Contraseña<input type="password" value={dashboardPassword} onChange={event => setDashboardPassword(event.target.value)} autoFocus required /></label><button className="primary-button" type="submit">Entrar</button>{loginError && <p className="auth-error">{loginError}</p>}</>}</form></div>
     return <div className="app-shell">
         <aside className="sidebar"><div className="brand"><div className="brand-mark">◈</div><div><strong>quota<span>pilot</span></strong><small>Gemini control center</small></div></div><div className="workspace-label">WORKSPACE</div><button className="workspace"><span className="workspace-icon">G</span><span>ForgeUnits · IA</span><span className="chevron">⌄</span></button><nav>{['Resumen', 'API keys', 'Consumo', 'Proyectos', 'Alertas'].map((item, index) => <button key={item} className={'nav-item ' + (activeNav === item ? 'active' : '')} onClick={() => setActiveNav(item)}><span className="nav-icon">{['⌂', '⌁', '▥', '▦', '♧'][index]}</span>{item}{item === 'Alertas' && <em>2</em>}</button>)}</nav><div className="sidebar-bottom"><div className="plan-card"><div><span className="plan-dot" /> Tier 1 · Paid</div><strong>8.4% <small>de uso mensual</small></strong><div className="mini-progress"><i /></div><small>Renueva en 12 días</small></div><button className="help"><span>?</span> Centro de ayuda</button><button className="profile"><span className="avatar">LP</span><span><strong>Luis Pérez</strong><small>Administrador</small></span><span className="chevron">⌄</span></button></div></aside>
         <main className="main-area"><header className="topbar"><div><div className="breadcrumbs">Workspace <span>/</span> {activeNav}</div><h1>{activeNav === 'Resumen' ? 'Resumen de consumo' : activeNav}</h1></div><div className="top-actions"><button className="date-chip">◷ Últimas 24 horas <span>⌄</span></button><button className="icon-button" onClick={toggleTheme} title="Cambiar tema">{theme === 'dark' ? '☼' : '☾'}</button><button className="icon-button notification">♧<i /></button></div></header>

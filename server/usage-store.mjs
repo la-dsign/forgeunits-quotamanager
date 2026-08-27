@@ -4,7 +4,7 @@ import path from 'node:path'
 const emptyState = { events: [], keys: [], updatedAt: null }
 
 export class UsageStore {
-    constructor(filePath) { this.filePath = filePath; this.state = structuredClone(emptyState) }
+    constructor(filePath) { this.filePath = filePath; this.state = structuredClone(emptyState); this.writeQueue = Promise.resolve() }
     async init() {
         await fs.mkdir(path.dirname(this.filePath), { recursive: true })
         try { this.state = JSON.parse(await fs.readFile(this.filePath, 'utf8')) }
@@ -12,9 +12,13 @@ export class UsageStore {
     }
     async persist() {
         this.state.updatedAt = new Date().toISOString()
-        const tempPath = this.filePath + '.tmp'
-        await fs.writeFile(tempPath, JSON.stringify(this.state, null, 2), 'utf8')
-        await fs.rename(tempPath, this.filePath)
+        const snapshot = JSON.stringify(this.state, null, 2)
+        this.writeQueue = this.writeQueue.then(async () => {
+            const tempPath = this.filePath + '.' + crypto.randomUUID() + '.tmp'
+            await fs.writeFile(tempPath, snapshot, 'utf8')
+            await fs.rename(tempPath, this.filePath)
+        })
+        await this.writeQueue
     }
     async addEvent(event) {
         const normalized = {

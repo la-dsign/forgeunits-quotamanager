@@ -1,4 +1,5 @@
 import http from 'node:http'
+import crypto from 'node:crypto'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -9,9 +10,16 @@ const port = Number(process.env.PORT || process.env.AI_USAGE_PORT || 3010)
 const root = path.dirname(fileURLToPath(import.meta.url))
 const store = new UsageStore(process.env.AI_USAGE_STORE || path.join(root, 'data', 'usage.json'))
 const publicRoot = path.join(root, '..', 'dist')
+const sessions = new Map()
+const sessionTtlMs = 8 * 60 * 60 * 1000
+const allowedStatuses = new Set(['completed', 'failed', 'rate_limited'])
+const idPattern = /^[a-zA-Z0-9._:-]{1,100}$/
 
 function json(res, status, body) {
-    res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Access-Control-Allow-Origin': process.env.AI_USAGE_CORS_ORIGIN || 'http://localhost:5173', 'Access-Control-Allow-Headers': 'Content-Type, X-Usage-Token, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' })
+    const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Access-Control-Allow-Headers': 'Content-Type, X-Usage-Token, Authorization', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' }
+    const origin = process.env.AI_USAGE_CORS_ORIGIN
+    if (origin) { headers['Access-Control-Allow-Origin'] = origin; headers.Vary = 'Origin' }
+    res.writeHead(status, headers)
     res.end(JSON.stringify(body))
 }
 function landing(res) {
@@ -21,7 +29,8 @@ function landing(res) {
 async function serveApp(req, res) {
     const requested = req.url === '/' ? 'index.html' : req.url.replace(/^\/+/, '')
     const safePath = path.resolve(publicRoot, requested)
-    if (!safePath.startsWith(path.resolve(publicRoot))) return false
+    const relative = path.relative(path.resolve(publicRoot), safePath)
+    if (relative.startsWith('..') || path.isAbsolute(relative)) return false
     try {
         const content = await fs.readFile(safePath)
         const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json' }
@@ -36,11 +45,58 @@ async function readBody(req) {
     if (raw.length > 1_000_000) throw new Error('payload demasiado grande')
     return raw ? JSON.parse(raw) : {}
 }
-function authorized(req) {
+function safeEqual(left, right) {
+    const a = Buffer.from(String(left || ''))
+    const b = Buffer.from(String(right || ''))
+    return a.length === b.length && crypto.timingSafeEqual(a, b)
+}
+function parseCookies(req) {
+    return Object.fromEntries(String(req.headers.cookie || '').split(';').map(part => {
+        const separator = part.indexOf('=')
+        return separator >= 0 ? [part.slice(0, separator).trim(), part.slice(separator + 1).trim()] : []
+    }).filter(([name, value]) => name && value))
+}
+function serviceAuthorized(req) {
     const configured = process.env.AI_USAGE_API_TOKEN || process.env.AI_USAGE_INGEST_TOKEN
-    if (!configured) return true
+    if (!configured) return false
     const bearer = String(req.headers.authorization || '').replace(/^Bearer\s+/i, '')
-    return req.headers['x-usage-token'] === configured || bearer === configured
+    return safeEqual(req.headers['x-usage-token'], configured) || safeEqual(bearer, configured)
+}
+function dashboardAuthorized(req) {
+    const token = parseCookies(req).ai_usage_session
+    const session = token && sessions.get(token)
+    if (!session || session.expiresAt < Date.now()) { if (token) sessions.delete(token); return false }
+    return true
+}
+function authorized(req, scope = 'service') {
+    return scope === 'dashboard' ? dashboardAuthorized(req) || serviceAuthorized(req) : serviceAuthorized(req)
+}
+function sessionCookie(token, maxAge) {
+    const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
+    return `ai_usage_session=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${maxAge}${secure}`
+}
+function requireId(value, field) {
+    if (value === undefined || value === null || value === '') return 'unknown'
+    if (typeof value !== 'string' || !idPattern.test(value)) throw new Error(field + ' inválido')
+    return value
+}
+function boundedNumber(value, field, maximum = 100_000_000_000) {
+    const number = Number(value || 0)
+    if (!Number.isFinite(number) || number < 0 || number > maximum) throw new Error(field + ' inválido')
+    return Math.floor(number)
+}
+function normalizeEventBody(body) {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('evento inválido')
+    return {
+        ...body,
+        tenantId: requireId(body.tenantId, 'tenantId'), userId: requireId(body.userId, 'userId'),
+        agentId: requireId(body.agentId, 'agentId'), workflowId: requireId(body.workflowId, 'workflowId'),
+        projectId: requireId(body.projectId, 'projectId'), apiKeyId: requireId(body.apiKeyId, 'apiKeyId'),
+        model: requireId(body.model, 'model'), inputTokens: boundedNumber(body.inputTokens, 'inputTokens'),
+        outputTokens: boundedNumber(body.outputTokens, 'outputTokens'), cachedInputTokens: boundedNumber(body.cachedInputTokens, 'cachedInputTokens'),
+        groundingRequests: boundedNumber(body.groundingRequests, 'groundingRequests'),
+        status: allowedStatuses.has(body.status || 'completed') ? (body.status || 'completed') : (() => { throw new Error('status inválido') })(),
+    }
 }
 function keyConfig(requestedId) {
     let keys = {}
@@ -69,8 +125,8 @@ async function generateWithGemini(body) {
     const config = keyConfig(body.apiKeyId)
     if (!config.key) throw new Error('GEMINI_API_KEY no está configurada en el servidor')
     const model = body.model || 'gemini-2.5-flash'
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(config.key), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.key },
         body: JSON.stringify({ contents: body.contents, generationConfig: body.generationConfig, systemInstruction: body.systemInstruction })
     })
     const payload = await response.json()
@@ -96,6 +152,24 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'GET' && !url.pathname.startsWith('/api/') && await serveApp(req, res)) return
         if (req.method === 'GET' && url.pathname === '/') return landing(res)
         if (req.method === 'GET' && url.pathname === '/health') return json(res, 200, { ok: true, service: 'ai-usage-service', updatedAt: store.state.updatedAt })
+        if (req.method === 'POST' && url.pathname === '/api/auth/login') {
+            const body = await readBody(req)
+            const configuredPassword = process.env.AI_USAGE_DASHBOARD_PASSWORD
+            if (!configuredPassword) return json(res, 503, { error: 'dashboard_auth_not_configured' })
+            if (!safeEqual(body.password, configuredPassword)) return json(res, 401, { error: 'invalid_credentials' })
+            const token = crypto.randomBytes(32).toString('base64url')
+            sessions.set(token, { expiresAt: Date.now() + sessionTtlMs })
+            res.setHeader('Set-Cookie', sessionCookie(token, sessionTtlMs / 1000))
+            return json(res, 200, { authenticated: true })
+        }
+        if (req.method === 'GET' && url.pathname === '/api/auth/status') return json(res, 200, { authenticated: authorized(req, 'dashboard') })
+        if (req.method === 'POST' && url.pathname === '/api/auth/logout') {
+            const token = parseCookies(req).ai_usage_session
+            if (token) sessions.delete(token)
+            res.setHeader('Set-Cookie', sessionCookie('', 0))
+            return json(res, 200, { authenticated: false })
+        }
+        if (url.pathname.startsWith('/api/ai-usage/') && !authorized(req, url.pathname.startsWith('/api/ai-usage/') && req.method === 'GET' ? 'dashboard' : 'service')) return json(res, 401, { error: 'unauthorized' })
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/keys') return json(res, 200, { items: store.listKeySummaries(configuredKeyMetadata()) })
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/events') {
             const events = store.filterEvents(Object.fromEntries(url.searchParams)).slice(-100).reverse()
@@ -103,9 +177,8 @@ const server = http.createServer(async (req, res) => {
         }
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/events') {
             if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })
-            const body = await readBody(req)
-            const hasCost = body.costUsd !== undefined && body.costUsd !== null && Number.isFinite(Number(body.costUsd))
-            if (!hasCost) body.costUsd = calculateCost({ model: body.model, inputTokens: body.inputTokens, outputTokens: body.outputTokens, mode: body.mode })
+            const body = normalizeEventBody(await readBody(req))
+            body.costUsd = calculateCost({ model: body.model, inputTokens: body.inputTokens, outputTokens: body.outputTokens, mode: body.mode })
             return json(res, 201, { event: await store.addEvent(body) })
         }
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/keys') {
@@ -115,11 +188,16 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/generate') {
             if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })
             const body = await readBody(req)
+            if (!Array.isArray(body.contents) || body.contents.length === 0) throw new Error('contents es obligatorio')
+            if (body.apiKeyId !== undefined) requireId(body.apiKeyId, 'apiKeyId')
             const config = keyConfig(body.apiKeyId)
             const quota = rpmAllowed(config.id)
             if (!quota.allowed) return json(res, 429, { error: 'internal_rpm_limit_reached', quota })
-            const result = await generateWithGemini(body)
-            return json(res, 200, result)
+            try { return json(res, 200, await generateWithGemini(body)) }
+            catch (error) {
+                await store.addEvent(normalizeEventBody({ ...body, projectId: config.projectId, apiKeyId: config.id, status: 'failed', inputTokens: 0, outputTokens: 0, cachedInputTokens: 0, groundingRequests: 0 }))
+                throw error
+            }
         }
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/summary') return json(res, 200, { period: { from: url.searchParams.get('from'), to: url.searchParams.get('to') }, ...store.summarize(store.filterEvents(Object.fromEntries(url.searchParams))) })
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/by-key') return json(res, 200, { items: store.groupBy(store.filterEvents(Object.fromEntries(url.searchParams)), 'apiKeyId') })
