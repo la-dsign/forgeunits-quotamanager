@@ -36,6 +36,25 @@ export class UsageStore {
         if (index >= 0) this.state.keys[index] = { ...this.state.keys[index], ...safeKey }; else this.state.keys.push(safeKey)
         await this.persist(); return safeKey
     }
+    listKeySummaries(configuredKeys = []) {
+        const configured = new Map(configuredKeys.map(key => [key.id, key]))
+        const ids = new Set([...configured.keys(), ...this.state.keys.map(key => key.id), ...this.state.events.map(event => event.apiKeyId)])
+        return [...ids].filter(Boolean).map(id => {
+            const metadata = this.state.keys.find(key => key.id === id) || {}
+            const config = configured.get(id) || {}
+            const events = this.state.events.filter(event => event.apiKeyId === id)
+            return {
+                id,
+                name: metadata.name || config.name || id,
+                projectId: metadata.projectId || config.projectId || 'unknown',
+                status: metadata.status || 'Activo',
+                internalLimit: metadata.internalLimit || 2000,
+                configured: Boolean(config.configured),
+                ...this.summarize(events),
+                lastUsed: events.at(-1)?.timestamp || null,
+            }
+        })
+    }
     filterEvents(query = {}) {
         const from = query.from ? Date.parse(query.from) : -Infinity
         const to = query.to ? Date.parse(query.to) : Infinity

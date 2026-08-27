@@ -50,6 +50,15 @@ function keyConfig(requestedId) {
     const id = requestedId || process.env.GEMINI_API_KEY_ID || Object.keys(keys)[0] || 'default-gemini-key'
     return { key: keys[id] || (id === (process.env.GEMINI_API_KEY_ID || 'default-gemini-key') ? process.env.GEMINI_API_KEY : undefined), id, projectId: process.env.GEMINI_PROJECT_ID || 'unknown' }
 }
+function configuredKeyMetadata() {
+    let keys = {}
+    if (process.env.GEMINI_API_KEYS_JSON) {
+        try { keys = JSON.parse(process.env.GEMINI_API_KEYS_JSON) } catch { throw new Error('GEMINI_API_KEYS_JSON no es JSON válido') }
+    }
+    const ids = Object.keys(keys)
+    if (process.env.GEMINI_API_KEY && !ids.includes(process.env.GEMINI_API_KEY_ID || 'default-gemini-key')) ids.push(process.env.GEMINI_API_KEY_ID || 'default-gemini-key')
+    return ids.map(id => ({ id, projectId: process.env.GEMINI_PROJECT_ID || 'unknown', configured: true }))
+}
 function rpmAllowed(apiKeyId) {
     const limit = Number(process.env.AI_USAGE_RPM_LIMIT || 60)
     const since = Date.now() - 60_000
@@ -87,9 +96,17 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'GET' && !url.pathname.startsWith('/api/') && await serveApp(req, res)) return
         if (req.method === 'GET' && url.pathname === '/') return landing(res)
         if (req.method === 'GET' && url.pathname === '/health') return json(res, 200, { ok: true, service: 'ai-usage-service', updatedAt: store.state.updatedAt })
+        if (req.method === 'GET' && url.pathname === '/api/ai-usage/keys') return json(res, 200, { items: store.listKeySummaries(configuredKeyMetadata()) })
+        if (req.method === 'GET' && url.pathname === '/api/ai-usage/events') {
+            const events = store.filterEvents(Object.fromEntries(url.searchParams)).slice(-100).reverse()
+            return json(res, 200, { items: events })
+        }
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/events') {
             if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })
-            return json(res, 201, { event: await store.addEvent(await readBody(req)) })
+            const body = await readBody(req)
+            const hasCost = body.costUsd !== undefined && body.costUsd !== null && Number.isFinite(Number(body.costUsd))
+            if (!hasCost) body.costUsd = calculateCost({ model: body.model, inputTokens: body.inputTokens, outputTokens: body.outputTokens, mode: body.mode })
+            return json(res, 201, { event: await store.addEvent(body) })
         }
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/keys') {
             if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })

@@ -21,12 +21,31 @@ El costo se calcula con el catálogo del frontend solo para demo. En producción
 
 ForgeUnits debería consumir datos agregados, sin conocer secretos:
 
-- GET /api/ai-usage/summary?from=&to=
-- GET /api/ai-usage/by-key?from=&to=
+- GET /api/ai-usage/summary?from=&to=&tenantId=&projectId=
+- GET /api/ai-usage/by-key?from=&to=&projectId=
 - GET /api/ai-usage/by-model?from=&to=
+- GET /api/ai-usage/keys
+- GET /api/ai-usage/events?from=&to=&apiKeyId=&limit=100
 - POST /api/ai-usage/events
 
-El adaptador de Google Cloud será responsable de consultar Monitoring/Quotas. El gateway será responsable de identificar la API key, contar tokens desde la respuesta de Gemini y aplicar los límites internos.
+Para que ForgeUnits no tenga que reportar manualmente cada token, puede enviar las llamadas al gateway:
+
+```text
+POST /api/ai-usage/generate
+Authorization: Bearer <AI_USAGE_API_TOKEN>
+{
+  "apiKeyId": "production-main",
+  "tenantId": "forgeunits",
+  "agentId": "quotation-agent",
+  "workflowId": "quote-123",
+  "model": "gemini-2.5-flash",
+  "contents": [{"parts":[{"text":"..."}]}]
+}
+```
+
+El gateway selecciona el secreto desde Railway, llama a Gemini, registra el resultado y devuelve la respuesta del modelo junto con el evento normalizado. Para aplicaciones que sigan llamando directamente al proveedor, ForgeUnits puede usar `createForgeUnitsUsageReporter` después de cada respuesta.
+
+El adaptador de Google Cloud será responsable de consultar Monitoring/Quotas si más adelante se necesita el valor oficial de cuota del proyecto. El gateway es responsable de identificar la API key lógica, contar tokens desde la respuesta de Gemini y aplicar los límites internos. Las cuotas de Google se aplican por proyecto, por lo que el desglose por API key en Quotamanager es trazabilidad y control operativo, no una cuota independiente creada por la aplicación.
 
 ## Precios incluidos
 
