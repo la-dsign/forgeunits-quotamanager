@@ -1,0 +1,152 @@
+.phase-logs-viewer {
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
+}
+
+.logs-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: left;
+}
+
+.logs-toggle:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.toggle-icon {
+    font-size: 10px;
+    color: var(--primary-color, #3b82f6);
+}
+
+.toggle-text {
+    flex: 1;
+}
+
+.logs-container {
+    margin-top: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.logs-content {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.logs-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.logs-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.logs-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+}
+
+.logs-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    line-height: 1.4;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-timestamp {
+    color: rgba(255, 255, 255, 0.4);
+    flex-shrink: 0;
+    width: 70px;
+}
+
+.log-level-icon {
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.log-message {
+    flex: 1;
+    color: rgba(255, 255, 255, 0.8);
+    word-wrap: break-word;
+}
+
+/* Log Level Colors */
+.log-level-info {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.log-level-info:hover {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+.log-level-warning {
+    background: rgba(245, 158, 11, 0.05);
+}
+
+.log-level-warning:hover {
+    background: rgba(245, 158, 11, 0.08);
+}
+
+.log-level-error {
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.log-level-error:hover {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.log-level-debug {
+    background: rgba(168, 85, 247, 0.05);
+}
+
+.log-level-debug:hover {
+    background: rgba(168, 85, 247, 0.08);
+}
+
+/* Empty State */
+.logs-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.empty-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.logs-empty p {
+    margin: 0;
+    font-size: 13px;
+}

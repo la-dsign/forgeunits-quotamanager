@@ -1,0 +1,147 @@
+.control-panel {
+    background: var(--bg-card);
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.control-panel h3 {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-light);
+}
+
+.control-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.control-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.control-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.control-btn.start {
+    background: var(--success);
+    color: white;
+}
+
+.control-btn.start:hover:not(:disabled) {
+    background: #45a049;
+}
+
+.control-btn.pause {
+    background: var(--warning);
+    color: white;
+}
+
+.control-btn.pause:hover:not(:disabled) {
+    background: #e08900;
+}
+
+.control-btn.resume {
+    background: var(--info);
+    color: white;
+}
+
+.control-btn.resume:hover:not(:disabled) {
+    background: #1976d2;
+}
+
+.control-btn.cancel {
+    background: var(--error);
+    color: white;
+}
+
+.control-btn.cancel:hover:not(:disabled) {
+    background: #d32f2f;
+}
+
+.control-btn.restart {
+    background: var(--primary);
+    color: white;
+}
+
+.control-btn.restart:hover:not(:disabled) {
+    background: var(--primary-hover);
+}
+
+.control-info {
+    padding-top: 16px;
+    border-top: 1px solid #444;
+    display: flex;
+    gap: 24px;
+}
+
+.control-info p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.control-info .label {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.control-info .value {
+    color: var(--text-light);
+    font-weight: 600;
+}
+
+.control-info .status-pending {
+    color: var(--text-muted);
+}
+
+.control-info .status-in-progress {
+    color: var(--info);
+}
+
+.control-info .status-completed {
+    color: var(--success);
+}
+
+.control-info .status-failed {
+    color: var(--error);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .control-buttons {
+        flex-direction: column;
+    }
+
+    .control-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .control-info {
+        flex-direction: column;
+        gap: 12px;
+    }
+}

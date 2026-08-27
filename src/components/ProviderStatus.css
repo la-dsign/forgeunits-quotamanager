@@ -1,0 +1,197 @@
+/* ProviderStatus.css - Styles for LLM Provider Status Panel */
+
+.provider-status {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.provider-status.compact {
+    padding: 16px;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.provider-status .panel-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.total-capacity {
+    text-align: right;
+}
+
+.capacity-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.capacity-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #10b981;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 30px;
+    color: #9ca3af;
+    animation: pulse 1.5s infinite;
+}
+
+.error-banner {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+}
+
+.provider-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.provider-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+
+.provider-item:hover {
+    border-color: #cbd5e1;
+    transform: translateX(4px);
+}
+
+.provider-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.provider-icon {
+    font-size: 1.3rem;
+}
+
+.provider-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.provider-name {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.provider-quota {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.status-active {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+}
+
+.status-badge.status-limited {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    color: #92400e;
+}
+
+.status-badge.status-standby {
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #3730a3;
+}
+
+.status-badge.status-offline {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    color: #991b1b;
+}
+
+/* Fallback Order */
+.fallback-order {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.fallback-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.fallback-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.fallback-item {
+    background: #f1f5f9;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #475569;
+}
+
+.fallback-arrow {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+/* Compact Mode */
+.provider-status.compact .provider-item {
+    padding: 10px 12px;
+}
+
+.provider-status.compact .provider-icon {
+    font-size: 1.1rem;
+}
+
+.provider-status.compact .provider-name {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 400px) {
+    .panel-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .total-capacity {
+        text-align: left;
+    }
+}

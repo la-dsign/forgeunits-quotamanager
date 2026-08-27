@@ -1,0 +1,438 @@
+/* Session Grid Container */
+.session-grid-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--background);
+}
+
+/* Header */
+.grid-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.grid-controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* View mode toggle */
+.view-mode-toggle {
+    display: flex;
+    background: var(--surface-light);
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.view-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.view-btn:hover {
+    background: var(--surface);
+    color: var(--text-primary);
+}
+
+.view-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+/* Filters and sort */
+.grid-filter,
+.grid-sort {
+    padding: 0.5rem 0.75rem;
+    background: var(--surface-light);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.grid-filter:hover,
+.grid-sort:hover {
+    border-color: var(--primary);
+}
+
+.grid-filter:focus,
+.grid-sort:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Stats */
+.grid-stats {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.grid-stat {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Session Grid */
+.session-grid {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+}
+
+/* Grid view (2-4 columns) */
+.session-grid.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    align-content: start;
+}
+
+/* Compact view (list) */
+.session-grid.compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.session-grid.compact .session-card {
+    padding: 0.75rem;
+}
+
+.session-grid.compact .card-phases {
+    display: none;
+}
+
+/* Session Card */
+.session-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.session-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.session-card.selected {
+    border-color: var(--primary);
+    background: var(--surface-light);
+}
+
+/* Status-specific card borders */
+.session-card.pending {
+    border-left: 4px solid #888;
+}
+
+.session-card.in-progress {
+    border-left: 4px solid var(--primary);
+}
+
+.session-card.completed {
+    border-left: 4px solid var(--success);
+}
+
+.session-card.failed {
+    border-left: 4px solid var(--error);
+}
+
+/* Card header */
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.card-status-icon {
+    font-size: 1.25rem;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Card progress */
+.card-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.card-progress .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--surface-light);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.card-progress .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), #818cf8);
+    transition: width 0.3s ease;
+}
+
+.card-progress .progress-text {
+    min-width: 40px;
+    text-align: right;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* Card stats */
+.card-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.card-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.card-stat .stat-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-stat .stat-value {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Status colors */
+.stat-value.status-pending {
+    color: #888;
+}
+
+.stat-value.status-in-progress {
+    color: var(--primary);
+}
+
+.stat-value.status-completed {
+    color: var(--success);
+}
+
+.stat-value.status-failed {
+    color: var(--error);
+}
+
+/* Phase indicators */
+.card-phases {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.phase-indicator {
+    width: 32px;
+    height: 8px;
+    border-radius: 4px;
+    background: var(--surface-light);
+    transition: all 0.2s;
+}
+
+.phase-indicator.status-pending {
+    background: #888;
+}
+
+.phase-indicator.status-in-progress {
+    background: var(--primary);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.phase-indicator.status-completed {
+    background: var(--success);
+}
+
+.phase-indicator.status-failed {
+    background: var(--error);
+}
+
+.phase-indicator:hover {
+    transform: scaleY(1.5);
+}
+
+.phase-indicator-more {
+    display: flex;
+    align-items: center;
+    padding: 0 0.5rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+/* Pulse animation for in-progress phases */
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Empty state */
+.grid-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    gap: 1rem;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    opacity: 0.5;
+}
+
+.empty-text {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+}
+
+.reset-filter-btn {
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.reset-filter-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Scrollbar styling */
+.session-grid::-webkit-scrollbar {
+    width: 8px;
+}
+
+.session-grid::-webkit-scrollbar-track {
+    background: var(--background);
+}
+
+.session-grid::-webkit-scrollbar-thumb {
+    background: var(--surface-light);
+    border-radius: 4px;
+}
+
+.session-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--border);
+}
+
+/* Responsive design */
+@media (max-width: 1400px) {
+    .session-grid.grid {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
+@media (max-width: 1024px) {
+    .grid-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .grid-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .grid-stats {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .session-grid.grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .session-grid.grid {
+        grid-template-columns: 1fr;
+    }
+
+    .view-mode-toggle {
+        width: 100%;
+    }
+
+    .view-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .grid-filter,
+    .grid-sort {
+        width: 100%;
+    }
+
+    .card-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .card-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .card-header {
+        flex-wrap: wrap;
+    }
+
+    .card-title {
+        width: 100%;
+    }
+}
