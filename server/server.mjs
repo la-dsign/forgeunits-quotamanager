@@ -172,7 +172,8 @@ const server = http.createServer(async (req, res) => {
             res.setHeader('Set-Cookie', sessionCookie('', 0))
             return json(res, 200, { authenticated: false })
         }
-        if (url.pathname.startsWith('/api/ai-usage/') && !authorized(req, url.pathname.startsWith('/api/ai-usage/') && req.method === 'GET' ? 'dashboard' : 'service')) return json(res, 401, { error: 'unauthorized' })
+        const dashboardWritable = req.method === 'POST' && url.pathname === '/api/ai-usage/keys'
+        if (url.pathname.startsWith('/api/ai-usage/') && !authorized(req, req.method === 'GET' || dashboardWritable ? 'dashboard' : 'service')) return json(res, 401, { error: 'unauthorized' })
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/keys') return json(res, 200, { items: store.listKeySummaries(configuredKeyMetadata()) })
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/events') {
             const events = store.filterEvents(Object.fromEntries(url.searchParams)).slice(-100).reverse()
@@ -186,8 +187,14 @@ const server = http.createServer(async (req, res) => {
             return json(res, 201, { event: await store.addEvent(body) })
         }
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/keys') {
-            if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })
-            return json(res, 201, { key: await store.upsertKey(await readBody(req)) })
+            const body = await readBody(req)
+            const id = requireId(String(body.id || ''), 'id')
+            const name = String(body.name || id).trim().slice(0, 120)
+            const projectId = String(body.projectId || 'unknown').trim().slice(0, 120)
+            const status = ['Activo', 'Alerta', 'Pausada'].includes(body.status) ? body.status : 'Activo'
+            const internalLimit = Math.min(1000000, Math.max(1, Number(body.internalLimit || 2000)))
+            if (!name || !projectId || !Number.isFinite(internalLimit)) throw new Error('metadatos de clave inválidos')
+            return json(res, 201, { key: await store.upsertKey({ id, name, projectId, status, internalLimit }) })
         }
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/generate') {
             if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })

@@ -22,7 +22,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             return 'light'
         }
 
-        return 'dark' // Default to dark
+        return 'light' // ForgeUnits uses the light operational panel as its default
     })
 
     useEffect(() => {

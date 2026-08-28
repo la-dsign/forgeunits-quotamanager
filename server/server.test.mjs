@@ -84,3 +84,12 @@ test('expone diez pares clave-proyecto sin revelar secretos', async () => {
     assert.equal(items.find(item => item.id === 'project-02-main').projectId, 'project-2')
     assert.equal(JSON.stringify(items).includes('fake-gemini-key'), false)
 })
+
+test('permite registrar metadatos desde el dashboard sin aceptar secretos', async () => {
+    const login = await fetch(baseUrl + '/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ password: dashboardPassword }) })
+    const cookie = login.headers.get('set-cookie')?.split(';')[0]
+    const response = await fetch(baseUrl + '/api/ai-usage/keys', { method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ id: 'dashboard-alias', name: 'Alias del panel', projectId: 'project-dashboard', internalLimit: 500 }) })
+    assert.equal(response.status, 201)
+    const items = (await (await fetch(baseUrl + '/api/ai-usage/keys', { headers: { cookie } })).json()).items
+    assert.equal(items.find(item => item.id === 'dashboard-alias').configured, false)
+})
