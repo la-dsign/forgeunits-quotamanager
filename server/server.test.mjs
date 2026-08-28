@@ -32,7 +32,7 @@ before(async () => {
     const upstreamPort = upstream.address().port
     const port = 3203
     baseUrl = `http://127.0.0.1:${port}`
-    child = spawn(process.execPath, ['server/server.mjs'], { env: { ...process.env, PORT: String(port), AI_USAGE_API_TOKEN: serviceToken, AI_USAGE_DASHBOARD_PASSWORD: dashboardPassword, GEMINI_API_KEY: 'fake-gemini-key', GEMINI_API_KEY_ID: 'production-main', GEMINI_PROJECT_ID: 'project-1', GEMINI_API_BASE_URL: `http://127.0.0.1:${upstreamPort}/v1beta`, AI_USAGE_STORE: path.join(tempDir, 'usage.json') }, stdio: 'ignore' })
+    child = spawn(process.execPath, ['server/server.mjs'], { env: { ...process.env, PORT: String(port), AI_USAGE_API_TOKEN: serviceToken, AI_USAGE_DASHBOARD_PASSWORD: dashboardPassword, GEMINI_API_KEY: 'fake-gemini-key', GEMINI_API_KEY_ID: 'production-main', GEMINI_API_KEYS_JSON: JSON.stringify({ 'production-main': { key: 'fake-gemini-key', projectId: 'project-1', name: 'Proyecto 01' }, 'project-02-main': { key: 'fake-gemini-key-2', projectId: 'project-2', name: 'Proyecto 02' } }), GEMINI_PROJECT_ID: 'fallback-project', GEMINI_API_BASE_URL: `http://127.0.0.1:${upstreamPort}/v1beta`, AI_USAGE_STORE: path.join(tempDir, 'usage.json') }, stdio: 'ignore' })
     await waitForHealth()
 })
 
@@ -74,4 +74,13 @@ test('captura usageMetadata de Gemini y registra la generación', async () => {
     assert.equal(payload.usage.inputTokens, 1000)
     assert.equal(payload.usage.outputTokens, 250)
     assert.equal(payload.usage.costUsd, 0.000925)
+})
+
+test('expone diez pares clave-proyecto sin revelar secretos', async () => {
+    const response = await fetch(baseUrl + '/api/ai-usage/keys', { headers: { authorization: `Bearer ${serviceToken}` } })
+    assert.equal(response.status, 200)
+    const items = (await response.json()).items
+    assert.deepEqual(items.map(item => item.id).sort(), ['production-main', 'project-02-main'])
+    assert.equal(items.find(item => item.id === 'project-02-main').projectId, 'project-2')
+    assert.equal(JSON.stringify(items).includes('fake-gemini-key'), false)
 })

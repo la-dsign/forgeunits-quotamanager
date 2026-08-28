@@ -105,7 +105,9 @@ function keyConfig(requestedId) {
         try { keys = JSON.parse(process.env.GEMINI_API_KEYS_JSON) } catch { throw new Error('GEMINI_API_KEYS_JSON no es JSON válido') }
     }
     const id = requestedId || process.env.GEMINI_API_KEY_ID || Object.keys(keys)[0] || 'default-gemini-key'
-    return { key: keys[id] || (id === (process.env.GEMINI_API_KEY_ID || 'default-gemini-key') ? process.env.GEMINI_API_KEY : undefined), id, projectId: process.env.GEMINI_PROJECT_ID || 'unknown' }
+    const configured = keys[id]
+    const key = typeof configured === 'string' ? configured : configured?.key
+    return { key: key || (id === (process.env.GEMINI_API_KEY_ID || 'default-gemini-key') ? process.env.GEMINI_API_KEY : undefined), id, name: configured?.name || id, projectId: configured?.projectId || process.env.GEMINI_PROJECT_ID || 'unknown' }
 }
 function configuredKeyMetadata() {
     let keys = {}
@@ -114,7 +116,7 @@ function configuredKeyMetadata() {
     }
     const ids = Object.keys(keys)
     if (process.env.GEMINI_API_KEY && !ids.includes(process.env.GEMINI_API_KEY_ID || 'default-gemini-key')) ids.push(process.env.GEMINI_API_KEY_ID || 'default-gemini-key')
-    return ids.map(id => ({ id, projectId: process.env.GEMINI_PROJECT_ID || 'unknown', configured: true }))
+    return ids.map(id => ({ id, name: typeof keys[id] === 'object' ? keys[id].name || id : id, projectId: typeof keys[id] === 'object' ? keys[id].projectId || process.env.GEMINI_PROJECT_ID || 'unknown' : process.env.GEMINI_PROJECT_ID || 'unknown', configured: true }))
 }
 function rpmAllowed(apiKeyId) {
     const limit = Number(process.env.AI_USAGE_RPM_LIMIT || 60)

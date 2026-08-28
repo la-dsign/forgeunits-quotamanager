@@ -22,7 +22,16 @@ Los clientes deben enviar `Idempotency-Key` para que los reintentos de red no du
 
 POST /api/ai-usage/generate recibe model, contents, generationConfig y opcionalmente apiKeyId, tenantId, userId, agentId, workflowId, systemInstruction, mode y groundingRequests. La clave real se lee exclusivamente desde GEMINI_API_KEY o GEMINI_API_KEYS_JSON, nunca desde el navegador. La respuesta incluye el resultado de Gemini y el evento de uso registrado.
 
-Para varias claves, GEMINI_API_KEYS_JSON puede ser un objeto como {"production-main":"AIza...","production-backup":"AIza..."}. En producción debe inyectarse desde un gestor de secretos y no guardarse en el repositorio.
+Para varias claves, `GEMINI_API_KEYS_JSON` acepta el formato simple `{"production-main":"AIza..."}` o el formato recomendado con proyecto y nombre por clave:
+
+```json
+{
+  "project-01-main": { "key": "AIza...", "projectId": "gen-lang-client-001", "name": "Proyecto 01" },
+  "project-02-main": { "key": "AIza...", "projectId": "gen-lang-client-002", "name": "Proyecto 02" }
+}
+```
+
+En producción debe inyectarse desde un gestor de secretos y no guardarse en el repositorio. `GEMINI_PROJECT_ID` se usa como fallback para claves con el formato simple.
 
 Consultas: GET /api/ai-usage/summary, GET /api/ai-usage/by-key, GET /api/ai-usage/by-model, GET /api/ai-usage/by-project, GET /api/ai-usage/by-agent, GET /api/ai-usage/by-workflow y GET /api/ai-usage/by-user. Todas requieren el token de servicio o una sesión iniciada del dashboard.
 
