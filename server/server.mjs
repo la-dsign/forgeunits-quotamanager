@@ -34,7 +34,7 @@ async function serveApp(req, res) {
     if (relative.startsWith('..') || path.isAbsolute(relative)) return false
     try {
         const content = await fs.readFile(safePath)
-        const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.json': 'application/json' }
+        const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json' }
         res.writeHead(200, { 'Content-Type': types[path.extname(safePath)] || 'application/octet-stream' })
         res.end(content)
         return true
