@@ -6,7 +6,9 @@ Servicio independiente para registrar consumo y preparar la integración posteri
 
 AI_USAGE_INGEST_TOKEN=local-dev-token node server/server.mjs
 
-Variables: AI_USAGE_PORT, AI_USAGE_STORE, AI_USAGE_API_TOKEN, AI_USAGE_DASHBOARD_PASSWORD, AI_USAGE_INGEST_TOKEN, AI_USAGE_CORS_ORIGIN, GEMINI_API_KEY, GEMINI_API_KEY_ID, GEMINI_API_KEYS_JSON, GEMINI_PROJECT_ID y AI_USAGE_RPM_LIMIT.
+Variables: AI_USAGE_PORT, AI_USAGE_STORE, AI_USAGE_API_TOKEN, AI_USAGE_DASHBOARD_PASSWORD, AI_USAGE_INGEST_TOKEN, AI_USAGE_CORS_ORIGIN, GEMINI_API_KEY, GEMINI_API_KEY_ID, GEMINI_API_KEYS_JSON, GEMINI_PROJECT_ID, GEMINI_API_BASE_URL y AI_USAGE_RPM_LIMIT.
+
+`GEMINI_API_BASE_URL` es opcional y por defecto apunta al endpoint oficial de Gemini. Puede cambiarse en pruebas automatizadas o entornos controlados, pero en producción debe conservar el endpoint oficial.
 
 No se almacenan API keys de Google. apiKeyId es un identificador lógico; los secretos deberán vivir en un gestor de secretos.
 

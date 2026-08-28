@@ -4,8 +4,10 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import http from 'node:http'
 
 let child
+let upstream
 let baseUrl
 let tempDir
 const serviceToken = 'test-service-token'
@@ -21,14 +23,22 @@ async function waitForHealth() {
 
 before(async () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'quotamanager-test-'))
+    upstream = http.createServer((request, response) => {
+        assert.equal(request.headers['x-goog-api-key'], 'fake-gemini-key')
+        response.writeHead(200, { 'content-type': 'application/json' })
+        response.end(JSON.stringify({ candidates: [{ content: { parts: [{ text: 'respuesta de prueba' }] } }], usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 250, cachedContentTokenCount: 100 } }))
+    })
+    await new Promise(resolve => upstream.listen(0, '127.0.0.1', resolve))
+    const upstreamPort = upstream.address().port
     const port = 3203
     baseUrl = `http://127.0.0.1:${port}`
-    child = spawn(process.execPath, ['server/server.mjs'], { env: { ...process.env, PORT: String(port), AI_USAGE_API_TOKEN: serviceToken, AI_USAGE_DASHBOARD_PASSWORD: dashboardPassword, AI_USAGE_STORE: path.join(tempDir, 'usage.json') }, stdio: 'ignore' })
+    child = spawn(process.execPath, ['server/server.mjs'], { env: { ...process.env, PORT: String(port), AI_USAGE_API_TOKEN: serviceToken, AI_USAGE_DASHBOARD_PASSWORD: dashboardPassword, GEMINI_API_KEY: 'fake-gemini-key', GEMINI_API_KEY_ID: 'production-main', GEMINI_PROJECT_ID: 'project-1', GEMINI_API_BASE_URL: `http://127.0.0.1:${upstreamPort}/v1beta`, AI_USAGE_STORE: path.join(tempDir, 'usage.json') }, stdio: 'ignore' })
     await waitForHealth()
 })
 
 after(async () => {
     child?.kill()
+    await new Promise(resolve => upstream?.close(resolve))
     await fs.rm(tempDir, { recursive: true, force: true })
 })
 
@@ -54,4 +64,14 @@ test('calcula el costo en servidor y evita duplicar idempotency keys', async () 
     assert.equal(secondEvent.id, firstEvent.id)
     const summary = await (await fetch(baseUrl + '/api/ai-usage/summary', { headers: { authorization: `Bearer ${serviceToken}` } })).json()
     assert.equal(summary.requests, 1)
+})
+
+test('captura usageMetadata de Gemini y registra la generación', async () => {
+    const response = await fetch(baseUrl + '/api/ai-usage/generate', { method: 'POST', headers: { authorization: `Bearer ${serviceToken}`, 'content-type': 'application/json', 'idempotency-key': 'generation-001' }, body: JSON.stringify({ apiKeyId: 'production-main', model: 'gemini-2.5-flash', contents: [{ parts: [{ text: 'test' }] }] }) })
+    assert.equal(response.status, 200)
+    const payload = await response.json()
+    assert.equal(payload.response.candidates[0].content.parts[0].text, 'respuesta de prueba')
+    assert.equal(payload.usage.inputTokens, 1000)
+    assert.equal(payload.usage.outputTokens, 250)
+    assert.equal(payload.usage.costUsd, 0.000925)
 })

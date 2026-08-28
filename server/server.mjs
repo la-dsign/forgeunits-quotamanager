@@ -12,6 +12,7 @@ const store = new UsageStore(process.env.AI_USAGE_STORE || path.join(root, 'data
 const publicRoot = path.join(root, '..', 'dist')
 const sessions = new Map()
 const sessionTtlMs = 8 * 60 * 60 * 1000
+const geminiBaseUrl = (process.env.GEMINI_API_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta').replace(/\/$/, '')
 const allowedStatuses = new Set(['completed', 'failed', 'rate_limited'])
 const idPattern = /^[a-zA-Z0-9._:-]{1,100}$/
 
@@ -125,7 +126,7 @@ async function generateWithGemini(body) {
     const config = keyConfig(body.apiKeyId)
     if (!config.key) throw new Error('GEMINI_API_KEY no está configurada en el servidor')
     const model = body.model || 'gemini-2.5-flash'
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', {
+    const response = await fetch(geminiBaseUrl + '/models/' + encodeURIComponent(model) + ':generateContent', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': config.key },
         body: JSON.stringify({ contents: body.contents, generationConfig: body.generationConfig, systemInstruction: body.systemInstruction })
     })
