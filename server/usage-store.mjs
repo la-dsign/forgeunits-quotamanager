@@ -32,6 +32,8 @@ export class UsageStore {
             costUsd: Math.max(0, Number(event.costUsd || 0)), status: event.status || 'completed', timestamp: event.timestamp || new Date().toISOString(),
         }
         if (!Number.isFinite(Date.parse(normalized.timestamp))) throw new Error('timestamp inválido')
+        const existing = this.state.events.find(item => item.id === normalized.id)
+        if (existing) return existing
         this.state.events.push(normalized); await this.persist(); return normalized
     }
     async upsertKey(key) {

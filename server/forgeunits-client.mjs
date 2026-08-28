@@ -1,10 +1,13 @@
+import crypto from 'node:crypto'
+
 export function createForgeUnitsUsageReporter({ baseUrl = 'http://localhost:3010', token, fetchImpl = fetch } = {}) {
     if (!token) throw new Error('El reporter necesita un token de servicio')
     return {
         async report(event) {
+            const idempotencyKey = event.id || crypto.randomUUID()
             const response = await fetchImpl(baseUrl.replace(/\/$/, '') + '/api/ai-usage/events', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token, 'Idempotency-Key': idempotencyKey },
                 body: JSON.stringify({
                     provider: event.provider || 'google',
                     tenantId: event.tenantId || 'forgeunits',

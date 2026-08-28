@@ -16,6 +16,8 @@ El servicio acepta Authorization: Bearer TOKEN para integraciones de servicio. A
 
 POST /api/ai-usage/events recibe provider, tenantId, userId, agentId, workflowId, projectId, apiKeyId, model, mode, inputTokens, outputTokens, cachedInputTokens, groundingRequests, status y timestamp. El costo siempre se calcula en el backend; el valor enviado por un cliente se ignora.
 
+Los clientes deben enviar `Idempotency-Key` para que los reintentos de red no dupliquen eventos. `server/forgeunits-client.mjs` lo genera automáticamente cuando el evento no incluye `id`.
+
 POST /api/ai-usage/generate recibe model, contents, generationConfig y opcionalmente apiKeyId, tenantId, userId, agentId, workflowId, systemInstruction, mode y groundingRequests. La clave real se lee exclusivamente desde GEMINI_API_KEY o GEMINI_API_KEYS_JSON, nunca desde el navegador. La respuesta incluye el resultado de Gemini y el evento de uso registrado.
 
 Para varias claves, GEMINI_API_KEYS_JSON puede ser un objeto como {"production-main":"AIza...","production-backup":"AIza..."}. En producción debe inyectarse desde un gestor de secretos y no guardarse en el repositorio.
@@ -25,3 +27,7 @@ Consultas: GET /api/ai-usage/summary, GET /api/ai-usage/by-key, GET /api/ai-usag
 ## Cliente para ForgeUnits
 
 El archivo server/forgeunits-client.mjs exporta createForgeUnitsUsageReporter({ baseUrl, token }). ForgeUnits puede importar ese cliente y llamar reporter.report({ tenantId, userId, agentId, workflowId, projectId, apiKeyId, model, inputTokens, outputTokens, status }) después de cada llamada a un proveedor.
+
+## Pruebas
+
+`npm run test:server` ejecuta pruebas de contrato para autenticación, sesiones, cálculo de costos e idempotencia.

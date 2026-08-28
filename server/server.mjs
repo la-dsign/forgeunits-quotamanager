@@ -178,6 +178,7 @@ const server = http.createServer(async (req, res) => {
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/events') {
             if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })
             const body = normalizeEventBody(await readBody(req))
+            if (req.headers['idempotency-key']) body.id = requireId(String(req.headers['idempotency-key']), 'idempotency-key')
             body.costUsd = calculateCost({ model: body.model, inputTokens: body.inputTokens, outputTokens: body.outputTokens, mode: body.mode })
             return json(res, 201, { event: await store.addEvent(body) })
         }
@@ -190,6 +191,7 @@ const server = http.createServer(async (req, res) => {
             const body = await readBody(req)
             if (!Array.isArray(body.contents) || body.contents.length === 0) throw new Error('contents es obligatorio')
             if (body.apiKeyId !== undefined) requireId(body.apiKeyId, 'apiKeyId')
+            if (req.headers['idempotency-key']) body.id = requireId(String(req.headers['idempotency-key']), 'idempotency-key')
             const config = keyConfig(body.apiKeyId)
             const quota = rpmAllowed(config.id)
             if (!quota.allowed) return json(res, 429, { error: 'internal_rpm_limit_reached', quota })
