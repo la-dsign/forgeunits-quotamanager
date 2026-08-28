@@ -28,7 +28,7 @@ function landing(res) {
     res.end('<!doctype html><html lang="es"><head><meta charset="utf-8"><title>AI Usage Service</title><style>body{font:16px system-ui;max-width:680px;margin:60px auto;padding:0 24px;color:#242238;background:#f7f7fb}main{background:white;border:1px solid #e7e5ef;border-radius:14px;padding:28px;box-shadow:0 8px 26px #2f2a620b}h1{margin-top:0}a{color:#6657d9;font-weight:700}li{margin:12px 0}</style></head><body><main><h1>AI Usage Service ✓</h1><p>El backend está activo y listo para recibir consumo de Gemini.</p><ul><li><a href="http://localhost:5173/">Abrir dashboard</a></li><li><a href="/health">Ver health check</a></li><li>API: /api/ai-usage/summary</li><li>API: /api/ai-usage/by-key</li><li>API: /api/ai-usage/by-model</li></ul></main></body></html>')
 }
 async function serveApp(req, res) {
-    const requested = req.url === '/' ? 'login.html' : req.url === '/dashboard' || req.url === '/dashboard/' ? 'index.html' : req.url.replace(/^\/+/, '')
+    const requested = req.url === '/' ? 'quotamanager-login.html' : req.url === '/dashboard' || req.url === '/dashboard/' ? 'index.html' : req.url.replace(/^\/+/, '')
     const safePath = path.resolve(publicRoot, requested)
     const relative = path.relative(path.resolve(publicRoot), safePath)
     if (relative.startsWith('..') || path.isAbsolute(relative)) return false
