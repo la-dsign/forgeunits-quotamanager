@@ -30,8 +30,6 @@ function EmptyState({ title, description }: { title: string; description: string
 function App() {
     const { theme, toggleTheme } = useTheme()
     const [auth, setAuth] = useState<AuthState>('checking')
-    const [password, setPassword] = useState('')
-    const [loginError, setLoginError] = useState('')
     const [activeNav, setActiveNav] = useState('Resumen')
     const [summary, setSummary] = useState<Summary>(emptySummary)
     const [keys, setKeys] = useState<KeySummary[]>([])
@@ -75,11 +73,6 @@ function App() {
         return () => window.clearInterval(interval)
     }, [auth, refresh])
 
-    const login = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault(); setLoginError('')
-        try { await readJson('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) }); setPassword(''); setAuth('authenticated') }
-        catch (requestError) { setLoginError(requestError instanceof Error && requestError.message === 'request_failed' ? 'Contraseña incorrecta.' : 'Configura AI_USAGE_DASHBOARD_PASSWORD en Railway.') }
-    }
     const logout = async () => { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }); setAuth('required') }
     const saveKeyMetadata = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault(); setKeyFormError('')
