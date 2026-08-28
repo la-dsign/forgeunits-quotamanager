@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Fondo con gradiente -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Fondo redondeado -->
+  <rect width="100" height="100" rx="20" fill="url(#grad1)"/>
+  
+  <!-- Icono de agenda/checklist -->
+  <rect x="20" y="15" width="60" height="70" rx="5" fill="white" opacity="0.9"/>
+  
+  <!-- Líneas de tareas -->
+  <line x1="30" y1="30" x2="50" y2="30" stroke="#667eea" stroke-width="3" stroke-linecap="round"/>
+  <line x1="30" y1="45" x2="50" y2="45" stroke="#667eea" stroke-width="3" stroke-linecap="round"/>
+  <line x1="30" y1="60" x2="50" y2="60" stroke="#667eea" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- Checkmarks -->
+  <path d="M 55 27 L 60 32 L 70 22" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 55 42 L 60 47 L 70 37" stroke="#4ade80" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Círculo para tercera tarea (pendiente) -->
+  <circle cx="63" cy="60" r="6" stroke="#e5e7eb" stroke-width="2" fill="none"/>
+</svg>
