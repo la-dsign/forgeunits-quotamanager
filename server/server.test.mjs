@@ -92,4 +92,10 @@ test('permite registrar metadatos desde el dashboard sin aceptar secretos', asyn
     assert.equal(response.status, 201)
     const items = (await (await fetch(baseUrl + '/api/ai-usage/keys', { headers: { cookie } })).json()).items
     assert.equal(items.find(item => item.id === 'dashboard-alias').configured, false)
+    const updated = await fetch(baseUrl + '/api/ai-usage/keys/dashboard-alias', { method: 'PUT', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Alias actualizado', internalLimit: 900 }) })
+    assert.equal(updated.status, 200)
+    const deleted = await fetch(baseUrl + '/api/ai-usage/keys/dashboard-alias', { method: 'DELETE', headers: { cookie } })
+    assert.equal(deleted.status, 200)
+    const afterDelete = (await (await fetch(baseUrl + '/api/ai-usage/keys', { headers: { cookie } })).json()).items
+    assert.equal(afterDelete.some(item => item.id === 'dashboard-alias'), false)
 })

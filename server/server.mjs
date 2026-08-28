@@ -172,7 +172,7 @@ const server = http.createServer(async (req, res) => {
             res.setHeader('Set-Cookie', sessionCookie('', 0))
             return json(res, 200, { authenticated: false })
         }
-        const dashboardWritable = req.method === 'POST' && url.pathname === '/api/ai-usage/keys'
+        const dashboardWritable = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && url.pathname.startsWith('/api/ai-usage/keys')
         if (url.pathname.startsWith('/api/ai-usage/') && !authorized(req, req.method === 'GET' || dashboardWritable ? 'dashboard' : 'service')) return json(res, 401, { error: 'unauthorized' })
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/keys') return json(res, 200, { items: store.listKeySummaries(configuredKeyMetadata()) })
         if (req.method === 'GET' && url.pathname === '/api/ai-usage/events') {
@@ -195,6 +195,24 @@ const server = http.createServer(async (req, res) => {
             const internalLimit = Math.min(1000000, Math.max(1, Number(body.internalLimit || 2000)))
             if (!name || !projectId || !Number.isFinite(internalLimit)) throw new Error('metadatos de clave inválidos')
             return json(res, 201, { key: await store.upsertKey({ id, name, projectId, status, internalLimit }) })
+        }
+        if ((req.method === 'PUT' || req.method === 'PATCH') && url.pathname.startsWith('/api/ai-usage/keys/')) {
+            const id = requireId(decodeURIComponent(url.pathname.split('/').pop()), 'id')
+            const body = await readBody(req)
+            const existing = store.state.keys.find(key => key.id === id)
+            if (!existing) return json(res, 404, { error: 'key_metadata_not_found' })
+            const name = String(body.name ?? existing.name).trim().slice(0, 120)
+            const projectId = String(body.projectId ?? existing.projectId).trim().slice(0, 120)
+            const status = ['Activo', 'Alerta', 'Pausada'].includes(body.status) ? body.status : existing.status
+            const internalLimit = Math.min(1000000, Math.max(1, Number(body.internalLimit ?? existing.internalLimit)))
+            if (!name || !projectId || !Number.isFinite(internalLimit)) throw new Error('metadatos de clave inválidos')
+            return json(res, 200, { key: await store.upsertKey({ ...existing, id, name, projectId, status, internalLimit }) })
+        }
+        if (req.method === 'DELETE' && url.pathname.startsWith('/api/ai-usage/keys/')) {
+            const id = requireId(decodeURIComponent(url.pathname.split('/').pop()), 'id')
+            if (configuredKeyMetadata().some(key => key.id === id)) return json(res, 409, { error: 'configured_key_is_managed_by_railway' })
+            const deleted = await store.deleteKey(id)
+            return deleted ? json(res, 200, { deleted: true, id }) : json(res, 404, { error: 'key_metadata_not_found' })
         }
         if (req.method === 'POST' && url.pathname === '/api/ai-usage/generate') {
             if (!authorized(req)) return json(res, 401, { error: 'unauthorized' })

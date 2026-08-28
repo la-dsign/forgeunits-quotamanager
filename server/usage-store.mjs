@@ -42,6 +42,13 @@ export class UsageStore {
         if (index >= 0) this.state.keys[index] = { ...this.state.keys[index], ...safeKey }; else this.state.keys.push(safeKey)
         await this.persist(); return safeKey
     }
+    async deleteKey(id) {
+        const index = this.state.keys.findIndex(key => key.id === id)
+        if (index < 0) return false
+        this.state.keys.splice(index, 1)
+        await this.persist()
+        return true
+    }
     listKeySummaries(configuredKeys = []) {
         const configured = new Map(configuredKeys.map(key => [key.id, key]))
         const ids = new Set([...configured.keys(), ...this.state.keys.map(key => key.id), ...this.state.events.map(event => event.apiKeyId)])
